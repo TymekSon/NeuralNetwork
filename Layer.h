@@ -7,7 +7,9 @@
 
 #include <vector>
 #include <cstddef>
-
+#include <random>
+#include <cmath>
+#include <stdexcept>
 
 enum class ActivationType {
     ReLU,
@@ -17,34 +19,27 @@ enum class ActivationType {
 
 class Layer {
   public:
-    Layer(size_t layerSize, size_t inputSize, ActivationType type = ActivationType::ReLU);
+    Layer(size_t in_dim, size_t out_dim, ActivationType act);
 
     std::vector<float> forward(std::vector<float>& a_prev);
 
-    std::vector<float> backward(std::vector<float>& delta_next, std::vector<float>& a_next);
+    std::vector<float> backward(const std::vector<float>& delta_next, const std::vector<float>& a_next, size_t next_out_dim);
 
-    void compute_gradients(std::vector<float>& a_prev, std::vector<float>& a_next);
+    void compute_gradients(std::vector<float>& a_prev);
 
     void update_params(float learning_rate);
+
+    float activate(float x) const;
+
+    float activate_derivative(float x) const;
 
     const std::vector<float>& get_weights() const;
     const std::vector<float>& get_biases() const;
 
-  private:
-    size_t layerSize, inputSize;
-    ActivationType activationType;
-
-    std::vector<float> weights_flat;
-    std::vector<float> biases;
-    std::vector<float> weight_gradients_flat;
-    std::vector<float> bias_gradients;
-
-    std::vector<float> z_;
-    std::vector<float> a_;
-    std::vector<float> delta_;
-
-    float activate(float x) const;
-    float activate_derivative(float x) const;
+private:
+    size_t in_dim, out_dim;
+    std::vector<float> W_flat, b, dW_flat, db, z, a, delta;
+    ActivationType act;
 };
 
 

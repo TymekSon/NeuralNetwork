@@ -1,9 +1,13 @@
 #include <iomanip>
 #include <iostream>
-#include "MINST_Loader.h"
 #include <string>
 
+#include "MINST_Loader.h"
+#include "Layer.h"
+
 int main() {
+
+    // TEST LOADERA DANYCH:
     MINST_Loader loader;
 
     std::string testImagesPath = "../Data/testImages.idx3-ubyte";
@@ -25,5 +29,8 @@ int main() {
         std::cout << std::setw(3) << std::setprecision(1) << testImagesParsed[12][i] << " ";
     }
 
+
+    // TEST WARSTWY:
+    Layer testLayer(3, 4, ActivationType::ReLU);
     return 0;
 }
