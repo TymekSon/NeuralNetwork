@@ -36,27 +36,20 @@ std::vector<uint8_t> MINST_Loader::load_MINST_Labels(std::string& file){
 }
 
 // Parsing pixel values from 0-255 to 0-1
-std::vector<std::vector<bool>> MINST_Loader::parse_MINST_Images(std::vector<std::vector<uint8_t>>& images, float threshold, std::string& file){
-    std::ifstream input_file(file, std::ios::binary);
-
-    uint32_t magic = read32(input_file);
-    uint32_t count = read32(input_file);
-    uint32_t rows = read32(input_file);
-    uint32_t cols = read32(input_file);
-
-    std::vector<std::vector<bool>> images_Parsed(count, std::vector<bool>(rows * cols));
-    for(uint32_t i = 0; i < images.size(); i++){
-        for(uint32_t j = 0; j < images[i].size(); j++){
-            if(images[i][j] >= threshold){
-                images_Parsed[i][j] = 1;
-            }
-            else{
-                images_Parsed[i][j] = 0;
-            }
-        }
+std::vector<std::vector<float>> MINST_Loader::normalize_MINST_Images(const std::vector<std::vector<uint8_t>>& raw_images) {
+    std::vector<std::vector<float>> norm;
+    norm.reserve(raw_images.size());
+    float scale = 1.0f / 255.0f;
+    for (auto &img : raw_images) {
+        std::vector<float> v;
+        v.reserve(img.size());
+        for (auto px : img)
+            v.push_back(px * scale);
+        norm.push_back(std::move(v));
     }
-    return images_Parsed;
+    return norm;
 }
+
 
 // Loading image data(size, datatype) for other methods
 uint32_t MINST_Loader::read32(std::ifstream& file){
@@ -64,3 +57,18 @@ uint32_t MINST_Loader::read32(std::ifstream& file){
     file.read((char*)&bytes, 4);
     return (bytes[0] << 24) | (bytes[1] << 16) | (bytes[2] << 8) | bytes[3];
 }
+
+
+std::vector<std::vector<float>> to_one_hot(
+    const std::vector<uint8_t>& labels, int num_classes = 10
+) {
+    std::vector<std::vector<float>> oh;
+    oh.reserve(labels.size());
+    for (auto l : labels) {
+        std::vector<float> v(num_classes, 0.0f);
+        v[l] = 1.0f;
+        oh.push_back(std::move(v));
+    }
+    return oh;
+}
+
