@@ -1,47 +1,44 @@
-//
-// Created by chomi on 08.07.2025.
-//
+#pragma once
 
-#ifndef LAYER_H
-#define LAYER_H
-
-#include <vector>
 #include <cstddef>
-#include <random>
-#include <cmath>
-#include <stdexcept>
-
-enum class ActivationType {
-    ReLU,
-    Sigmoid,
-    Tanh
-};
+#include <functional>
+#include "layer_config.h"
 
 class Layer {
-  public:
-    Layer(size_t in_dim, size_t out_dim, ActivationType act);
+public:
+    // Typy dla funkcji aktywacji
+    using ActFn   = std::function<float(float)>;
+    using ActDeriv= std::function<float(float)>;
 
-    std::vector<float> forward(std::vector<float>& a_prev);
+    // Konstruktor: wskaźniki i rozmiary muszą być wcześniej zaalokowane
+    Layer(const LayerConfig& cfg,
+          ActFn activation,
+          ActDeriv activation_deriv);
 
-    std::vector<float> backward(const std::vector<float>& delta_next, const std::vector<float>& a_next, size_t next_out_dim);
+    // Forward dla jednego przykładu
+    //  x[in_size] → z,a[out_size]
+    void forward(const float* x);
 
-    void compute_gradients(std::vector<float>& a_prev);
+    // Backward dla jednego przykładu
+    //  grad_out[out_size] → grad_in[in_size], przy okazji zapisuje grad_w, grad_b
+    void backward(const float* x, const float* grad_out, float* grad_in);
 
-    void update_params(float learning_rate);
+    // Reset gradientów (przy zbiorczym update)
+    void reset_gradients();
 
-    float activate(float x) const;
-
-    float activate_derivative(float x) const;
-
-    const std::vector<float>& get_weights() const;
-    const std::vector<float>& get_biases() const;
+    // Gettery
+    const float* output_activations() const { return a_; }
+    const float* raw_sums()         const { return z_; }
 
 private:
-    size_t in_dim, out_dim;
-    std::vector<float> W_flat, b, dW_flat, db, z, a, delta;
-    ActivationType act;
+    size_t in_size_;
+    size_t out_size_;
+
+    float *w_, *b_;      // wagi, biasy
+    float *z_, *a_;      // surowe sumy, aktywacje
+    float *delta_;       // δ
+    float *grad_w_, *grad_b_; // akumulatory gradientów
+
+    ActFn   act_fn_;
+    ActDeriv act_drv_;
 };
-
-
-
-#endif //LAYER_H

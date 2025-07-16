@@ -3,6 +3,9 @@
 //
 
 #include "Layer.h"
+#include <cmath>
+#include <random>
+#include "Arena.h"
 
 static float rand_uniform(float limit) {
     static std::mt19937 gen{ std::random_device{}() };
@@ -10,104 +13,54 @@ static float rand_uniform(float limit) {
     return dist(gen);
 }
 
-Layer::Layer(size_t in_dim, size_t out_dim, ActivationType act_type)
-    : in_dim(in_dim), out_dim(out_dim), act(act_type),
-      W_flat(out_dim * in_dim), b(out_dim),
-      dW_flat(out_dim * in_dim), db(out_dim),
-      z(out_dim), a(out_dim), delta(out_dim)
+using ActFn    = std::function<float(float)>;
+using ActDeriv = std::function<float(float)>;
+
+Layer::Layer(const LayerConfig& cfg,
+          ActFn activation,
+          ActDeriv activation_deriv)
+        : in_size_(cfg.input_size),
+          out_size_(cfg.output_size),
+          w_(cfg.weights_ptr),
+          b_(cfg.biases_ptr),
+          z_(cfg.z_ptr),
+          a_(cfg.a_ptr),
+          delta_(cfg.delta_ptr),
+          grad_w_(cfg.grad_w_ptr),
+          grad_b_(cfg.grad_b_ptr),
+          act_fn_(std::move(activation)),
+          act_drv_(std::move(activation_deriv))
 {
-    float limit = 0.0f;
-    if(act == ActivationType::ReLU) {
-        limit = std::sqrt(2.0f/static_cast<float>(in_dim));
-    } else {
-        limit = std::sqrt(2.0f/static_cast<float>(in_dim+out_dim));
-    }
-    for(size_t i = 0; i < W_flat.size(); i++) {
-        W_flat[i] = rand_uniform(limit);
-        dW_flat[i] = 0.0f;
-    }
-    for (size_t j = 0; j < out_dim; ++j) {
-        b[j] = 0.0f;
-        db[j] = 0.0f;
-    }
+    reset_gradients();
 }
 
-
-float Layer::activate(float x) const {
-    switch (act) {
-        case ActivationType::ReLU:    return x > 0.0f ? x : 0.0f;
-        case ActivationType::Sigmoid: return 1.0f / (1.0f + std::exp(-x));
-        case ActivationType::Tanh:    return std::tanh(x);
-        default: throw std::logic_error("Nieznany typ aktywacji");
-    }
-}
-
-float Layer::activate_derivative(float x) const {
-    switch (act) {
-        case ActivationType::ReLU:
-            return x > 0.0f ? 1.0f : 0.0f;
-        case ActivationType::Sigmoid: {
-            float s = 1.0f / (1.0f + std::exp(-x));
-            return s * (1.0f - s);
+void Layer::forward(const float* x) {
+    for (size_t j = 0; j < out_size_; ++j) {
+        float sum = b_[j];
+        float* w_row = w_ + j * in_size_;
+        for (size_t i = 0; i < in_size_; ++i) {
+            sum += w_row[i] * x[i];
         }
-        case ActivationType::Tanh: {
-            float t = std::tanh(x);
-            return 1.0f - t * t;
-        }
-        default: throw std::logic_error("Nieznany typ aktywacji");
+        z_[j] = sum;
+        a_[j] = act_fn_(sum);
     }
 }
 
-std::vector<float> Layer::forward(std::vector<float>& a_prev){
-    if(a_prev.size() != in_dim) throw std::runtime_error("Nieprawidłowy wymiar wejścia do warstwy");
-
-    for(size_t i = 0; i < out_dim; i++) {
-         float sum = b[i];
-         size_t row_off = i*in_dim;
-         for(size_t j = 0; j < in_dim; j++) {
-             sum += W_flat[row_off + j] * a_prev[j];
-         }
-         z[i] = sum;
-         a[i] = activate(sum);
+void Layer::backward(const float *x, const float *grad_out, float *grad_in) {
+    for (size_t j = 0; j < out_size_; ++j) {
+        delta_[j] = grad_out[j] * act_drv_(z_[j]);
     }
-    return a;
-}
 
-std::vector<float> Layer::backward(const std::vector<float>& delta_next, const std::vector<float>& W_next_flat, size_t next_out_dim){
-    for(size_t i = 0; i < in_dim; i++) {
-        float sum = 0.0f;
-        for(size_t j = 0; j < next_out_dim; j++) {
-            sum += W_next_flat[j * in_dim + i] * delta_next[j];
-        }
-        delta[i] = sum * activate_derivative(z[i]);
-    }
-    return delta;
-}
-
-void Layer::compute_gradients(std::vector<float>& a_prev){
-    for(size_t i = 0; i < out_dim; i++) {
-        db[i] = delta[i];
-        size_t row_off = i*in_dim;
-        for(size_t j = 0; j < in_dim; j++) {
-            dW_flat[row_off + j] = delta[i] * a_prev[j];
+    for (size_t i = 0; i < in_size_; ++i) {
+        float d = delta_[i];
+        grad_b_[i] += d;
+        float* gw_row = grad_w_ + i * out_size_;
+        float* w_row = w_ + i * out_size_;
+        for (size_t j = 0; j < out_size_; ++j) {
+            gw_row[j] += d * x[i];
+            grad_in[i] += w_row[j] * d;
         }
     }
 }
 
-void Layer::update_params(float learning_rate) {
-    for (size_t k = 0; k < W_flat.size(); ++k) {
-        W_flat[k] -= learning_rate * dW_flat[k];
-    }
-    for (size_t j = 0; j < out_dim; ++j) {
-        b[j] -= learning_rate * db[j];
-    }
-}
-
-const std::vector<float>& Layer::get_weights() const {
-    return W_flat;
-}
-
-const std::vector<float>& Layer::get_biases() const {
-    return b;
-}
 
