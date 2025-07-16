@@ -16,9 +16,42 @@ static float rand_uniform(float limit) {
 using ActFn    = std::function<float(float)>;
 using ActDeriv = std::function<float(float)>;
 
+float Layer::activate(float x, ActivationType type) {
+    switch(type) {
+        case ActivationType::ReLU:
+            return x > 0.0f ? x : 0.0f;
+        case ActivationType::Sigmoid: {
+            float s = 1.0f / (1.0f + std::exp(-x));
+            return s;
+        }
+        case ActivationType::Tanh:
+            return std::tanh(x);
+        case ActivationType::Identity:
+            default:
+                return x;
+    }
+}
+
+float Layer::activate_derivative(float x, ActivationType type) {
+    switch(type) {
+        case ActivationType::ReLU:
+            return x > 0.0f ? 1.0f : 0.0f;
+        case ActivationType::Sigmoid: {
+            float s = 1.0f / (1.0f + std::exp(-x));
+            return s * (1.0f - s);
+        }
+        case ActivationType::Tanh: {
+            float t = std::tanh(x);
+            return 1.0f - t * t;
+        }
+        case ActivationType::Identity:
+            default:
+                return 1.0f;
+    }
+}
+
 Layer::Layer(const LayerConfig& cfg,
-          ActFn activation,
-          ActDeriv activation_deriv)
+          ActivationType type)
         : in_size_(cfg.input_size),
           out_size_(cfg.output_size),
           w_(cfg.weights_ptr),
@@ -28,8 +61,7 @@ Layer::Layer(const LayerConfig& cfg,
           delta_(cfg.delta_ptr),
           grad_w_(cfg.grad_w_ptr),
           grad_b_(cfg.grad_b_ptr),
-          act_fn_(std::move(activation)),
-          act_drv_(std::move(activation_deriv))
+          type_(type)
 {
     reset_gradients();
 }
@@ -42,13 +74,13 @@ void Layer::forward(const float* x) {
             sum += w_row[i] * x[i];
         }
         z_[j] = sum;
-        a_[j] = act_fn_(sum);
+        a_[j] = activate(z_[j], type_);
     }
 }
 
 void Layer::backward(const float *x, const float *grad_out, float *grad_in) {
     for (size_t j = 0; j < out_size_; ++j) {
-        delta_[j] = grad_out[j] * act_drv_(z_[j]);
+        delta_[j] = grad_out[j] * activate_derivative(grad_out[j], type_);
     }
 
     for (size_t i = 0; i < in_size_; ++i) {
@@ -63,4 +95,7 @@ void Layer::backward(const float *x, const float *grad_out, float *grad_in) {
     }
 }
 
-
+void Layer::reset_gradients() {
+    std::fill(grad_w_, grad_w_ + in_size_ * out_size_, 0.0f);
+    std::fill(grad_b_, grad_b_ + out_size_,        0.0f);
+}
