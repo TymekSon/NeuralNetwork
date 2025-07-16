@@ -29,9 +29,9 @@ int main() {
 
     Layer layer(cfg, ActivationType::Sigmoid);
 
+    softmax_cross_entropy softmax;
+
     layer.forward(x);
-    const float* out = layer.output_activations();
-    std::cout << std::setprecision(4) << out[0] << ", " << out[1] << std::endl;
 
     arena.printContent(std::cout);
 
@@ -39,6 +39,10 @@ int main() {
     float grad_out[2] = {1.0f,1.0f};
     float grad_in[2]  = {0.0f,0.0f};
     layer.backward(x, grad_out, grad_in);
+
+    arena.printContent(std::cout);
+
+
 
     return 0;
 }
