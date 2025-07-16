@@ -32,3 +32,12 @@ void MemoryArena::reset() {
 ArenaStats MemoryArena::stats() const {
     return { capacity_, used_, peak_ };
 }
+
+void MemoryArena::printContent(std::ostream& os){
+    os << "MemoryArena Content (used=" << used_ << ", capacity=" << capacity_ << "):\n";
+    for (size_t i = 0; i < used_; ++i) {
+        os << data_[i];
+        if (i + 1 < used_) os << ", ";
+    }
+    os << std::endl;
+}

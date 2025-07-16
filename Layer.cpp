@@ -13,8 +13,28 @@ static float rand_uniform(float limit) {
     return dist(gen);
 }
 
-using ActFn    = std::function<float(float)>;
-using ActDeriv = std::function<float(float)>;
+Layer::Layer(const LayerConfig& cfg,
+          ActivationType type)
+        : in_size_(cfg.input_size),
+          out_size_(cfg.output_size),
+          w_(cfg.weights_ptr),
+          b_(cfg.biases_ptr),
+          z_(cfg.z_ptr),
+          a_(cfg.a_ptr),
+          delta_(cfg.delta_ptr),
+          grad_w_(cfg.grad_w_ptr),
+          grad_b_(cfg.grad_b_ptr),
+          type_(type)
+{
+    reset_gradients();
+    for (int i = 0; i < in_size_ * out_size_; i++) {
+        w_[i] = rand_uniform(1.0f);
+    }
+
+    for (int i = 0; i < out_size_; i++) {
+        b_[i] = 0.0f;
+    }
+}
 
 float Layer::activate(float x, ActivationType type) {
     switch(type) {
@@ -48,22 +68,6 @@ float Layer::activate_derivative(float x, ActivationType type) {
             default:
                 return 1.0f;
     }
-}
-
-Layer::Layer(const LayerConfig& cfg,
-          ActivationType type)
-        : in_size_(cfg.input_size),
-          out_size_(cfg.output_size),
-          w_(cfg.weights_ptr),
-          b_(cfg.biases_ptr),
-          z_(cfg.z_ptr),
-          a_(cfg.a_ptr),
-          delta_(cfg.delta_ptr),
-          grad_w_(cfg.grad_w_ptr),
-          grad_b_(cfg.grad_b_ptr),
-          type_(type)
-{
-    reset_gradients();
 }
 
 void Layer::forward(const float* x) {

@@ -18,6 +18,7 @@ public:
     float* allocate(size_t n);      // Zwraca wskaźnik do n floatów
     void reset();                   // Zaczyna alokację od początku
     ArenaStats stats() const;
+    void printContent(std::ostream& os);
 
 private:
     float* data_;
@@ -26,3 +27,4 @@ private:
     size_t used_;
     size_t peak_;
 };
+
