@@ -6,7 +6,6 @@
 #include "MINST_Loader.h"
 #include "Layer.h"
 #include "Arena.h"
-#include "softmax_cross_entropy.h"
 
 int main() {
 
@@ -29,14 +28,12 @@ int main() {
 
     Layer layer(cfg, ActivationType::Sigmoid);
 
-    softmax_cross_entropy softmax;
-
     layer.forward(x);
 
     arena.printContent(std::cout);
 
     // 6. Backward z grad_out = [1, 1]
-    float grad_out[2] = {1.0f,1.0f};
+    float grad_out[2] = {1.0f,2.0f};
     float grad_in[2]  = {0.0f,0.0f};
     layer.backward(x, grad_out, grad_in);
 
