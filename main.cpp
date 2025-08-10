@@ -32,7 +32,6 @@ int main() {
 
     arena.printContent(std::cout);
 
-    // 6. Backward z grad_out = [1, 1]
     float grad_out[2] = {1.0f,2.0f};
     float grad_in[2]  = {0.0f,0.0f};
     layer.backward(x, grad_out, grad_in);

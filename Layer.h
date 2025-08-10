@@ -34,7 +34,6 @@ public:
     const float* output_activations() const { return a_; }
     const float* raw_sums()         const { return z_; }
 
-private:
     size_t in_size_;
     size_t out_size_;
 
@@ -43,4 +42,5 @@ private:
     float *delta_;       // δ
     float *grad_w_, *grad_b_; // akumulatory gradientów
     ActivationType type_;
+private:
 };
