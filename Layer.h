@@ -4,7 +4,7 @@
 #include <functional>
 #include "layer_config.h"
 
-enum class ActivationType { Identity, ReLU, Sigmoid, Tanh };
+enum class ActivationType { Identity, ReLU, Sigmoid, Tanh, Softmax };
 
 class Layer {
 
@@ -27,6 +27,8 @@ public:
 
     // Reset gradientów (przy zbiorczym update)
     void reset_gradients();
+
+    void apply_softmax();
 
     // Gettery
     const float* output_activations() const { return a_; }

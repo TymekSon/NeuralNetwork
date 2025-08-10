@@ -26,7 +26,7 @@ int main() {
 
     float x[2] = {1.0f,2.0f};
 
-    Layer layer(cfg, ActivationType::Sigmoid);
+    Layer layer(cfg, ActivationType::ReLU);
 
     layer.forward(x);
 

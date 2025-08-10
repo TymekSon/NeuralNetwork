@@ -64,6 +64,7 @@ float Layer::activate_derivative(float x, ActivationType type) {
             float t = std::tanh(x);
             return 1.0f - t * t;
         }
+        case ActivationType::Softmax:
         case ActivationType::Identity:
             default:
                 return 1.0f;
@@ -73,12 +74,18 @@ float Layer::activate_derivative(float x, ActivationType type) {
 void Layer::forward(const float* x) {
     for (size_t j = 0; j < out_size_; ++j) {
         float sum = b_[j];
-        float* w_row = w_ + j * in_size_;
+        const float* w_row = w_ + j * in_size_;
         for (size_t i = 0; i < in_size_; ++i) {
             sum += w_row[i] * x[i];
         }
         z_[j] = sum;
-        a_[j] = activate(z_[j], type_);
+    }
+    if (type_ == ActivationType::Softmax) {
+        apply_softmax();
+    } else {
+        for (size_t j = 0; j < out_size_; ++j) {
+            a_[j] = activate(z_[j], type_);
+        }
     }
 }
 
@@ -102,4 +109,20 @@ void Layer::backward(const float *x, const float *grad_out, float *grad_in) {
 void Layer::reset_gradients() {
     std::fill(grad_w_, grad_w_ + in_size_ * out_size_, 0.0f);
     std::fill(grad_b_, grad_b_ + out_size_,        0.0f);
+}
+
+void Layer::apply_softmax() {
+    // softmax zapisuje wynik do a_ używając z_ jako wejścia (stosujemy stabilizację)
+    float max_z = z_[0];
+    for (size_t j = 1; j < out_size_; ++j) if (z_[j] > max_z) max_z = z_[j];
+
+    double sum = 0.0;
+    for (size_t j = 0; j < out_size_; ++j) {
+        double e = std::exp((double)z_[j] - max_z);
+        a_[j] = (float)e;
+        sum += e;
+    }
+    for (size_t j = 0; j < out_size_; ++j) {
+        a_[j] = (float)((double)a_[j] / sum);
+    }
 }
