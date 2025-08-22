@@ -16,7 +16,7 @@ class Network {
 public:
   Network(const std::vector<size_t>& sizes,
           ActivationType hidden_act = ActivationType::ReLU,
-          ActivationType output_act = ActivationType::Softmax) {};
+          ActivationType output_act = ActivationType::Softmax);
 
   void forward_pass(float* input);
 
