@@ -27,9 +27,11 @@ public:
     float* output_ptr() { return layers_.back().a_; }
     size_t output_size() const { return layers_.back().out_size_; }
 
+    void print_stats();
+
 private:
     std::vector<Layer> layers_;
-    MemoryArena arena_ = MemoryArena(1000);
+    MemoryArena arena_;
     float* input_buffer_; // wsk na buffer wejściowy (w arenie)
     float* grad_tmp1_;    // bufory pomocnicze (alokowane w arenie)
     float* grad_tmp2_;

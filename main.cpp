@@ -6,39 +6,54 @@
 #include "MINST_Loader.h"
 #include "Layer.h"
 #include "Arena.h"
+#include "Network.h"
 
 int main() {
+    std::vector<size_t> sizes = {3, 16, 2};
+    Network net(sizes, ActivationType::ReLU, ActivationType::Softmax);
 
-    //TEST ARENY
-    MemoryArena arena(18);
+    // przygotuj wejście (rozmiar 3)
+    float input[3] = {0.2f, 0.7f, 0.1f};
 
-    LayerConfig cfg;
+    // target: klasa 1 (one-hot dla rozmiaru 2)
+    float target[2] = {0.0f, 1.0f};
 
-    cfg.input_size    = 2;
-    cfg.output_size   = 2;
-    cfg.weights_ptr   = arena.allocate(2*2); // 4
-    cfg.biases_ptr    = arena.allocate(2);   // 2
-    cfg.z_ptr         = arena.allocate(2);   // 2
-    cfg.a_ptr         = arena.allocate(2);   // 2
-    cfg.delta_ptr     = arena.allocate(2);   // 2
-    cfg.grad_w_ptr    = arena.allocate(2*2); // 4
-    cfg.grad_b_ptr    = arena.allocate(2);   // 2
+    // przed treningiem -> forward
+    net.forward_pass(input);
+    float* out = net.output_ptr();
+    std::cout << "Output (before): ";
+    for (size_t i = 0; i < net.output_size(); ++i) std::cout << out[i] << " ";
+    std::cout << std::endl;
 
-    float x[2] = {1.0f,2.0f};
+    // policz strata cross-entropy: -sum y*log(a)
+    double loss = 0.0;
+    for (size_t i = 0; i < net.output_size(); ++i) {
+        loss -= target[i] * std::log(std::max(1e-8f, out[i]));
+    }
+    std::cout << "Loss (before): " << loss << std::endl;
 
-    Layer layer(cfg, ActivationType::ReLU);
+    // backward (one sample)
+    net.backward_pass(target);
 
-    layer.forward(x);
+    // update (proste SGD)
+    float lr = 0.5f;
+    net.update(lr, 1);
 
-    arena.printContent(std::cout);
+    // forward po update
+    net.forward_pass(input);
+    out = net.output_ptr();
+    std::cout << "Output (after): ";
+    for (size_t i = 0; i < net.output_size(); ++i) std::cout << out[i] << " ";
+    std::cout << std::endl;
 
-    float grad_out[2] = {1.0f,2.0f};
-    float grad_in[2]  = {0.0f,0.0f};
-    layer.backward(x, grad_out, grad_in);
+    loss = 0.0;
+    for (size_t i = 0; i < net.output_size(); ++i) {
+        loss -= target[i] * std::log(std::max(1e-8f, out[i]));
+    }
+    std::cout << "Loss (after): " << loss << std::endl;
 
-    arena.printContent(std::cout);
-
-
+    // statystyki areny (opcjonalnie)
+    net.print_stats();
 
     return 0;
 }

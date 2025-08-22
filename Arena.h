@@ -15,6 +15,9 @@ public:
     explicit MemoryArena(size_t total_floats);
     ~MemoryArena();
 
+    MemoryArena(const MemoryArena&) = delete;
+    MemoryArena& operator=(const MemoryArena&) = delete;
+
     float* allocate(size_t n);      // Zwraca wskaźnik do n floatów
     void reset();                   // Zaczyna alokację od początku
     ArenaStats stats() const;

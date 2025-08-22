@@ -4,49 +4,57 @@
 #include <cstring>
 #include <iostream>
 
+size_t max_width_of(const std::vector<size_t>& sizes) {
+        size_t m = 0;
+        for (size_t i = 0; i + 1 < sizes.size(); ++i) {
+            m = std::max({m, sizes[i], sizes[i+1]});
+        }
+        return m;
+    }
+
+    size_t calc_total_for_arena(const std::vector<size_t>& sizes) {
+        size_t total = 0;
+        size_t maxw  = 0;
+        for (size_t i = 0; i + 1 < sizes.size(); ++i) {
+            const size_t in  = sizes[i];
+            const size_t out = sizes[i+1];
+            maxw = std::max({maxw, in, out});
+            total += in * out; // w
+            total += out;      // b
+            total += out;      // z
+            total += out;      // a
+            total += out;      // delta
+            total += in * out; // grad_w
+            total += out;      // grad_b
+        }
+        total += sizes[0];      // input_buffer
+        total += 2 * maxw;      // grad_tmp1, grad_tmp2
+        return total;
+    }
+
 Network::Network(const std::vector<size_t>& sizes,
                  ActivationType hidden_act,
                  ActivationType output_act)
+    : arena_(calc_total_for_arena(sizes)),   // <-- INIT, nie przypisanie!
+      max_input_size_(max_width_of(sizes))   // max szerokość do scratchy
 {
     if (sizes.size() < 2) throw std::runtime_error("Network: need >=2 sizes");
-    // policz ile floatów potrzeba (weights, biases, z, a, delta, grad_w, grad_b dla każdej warstwy)
-    size_t total = 0;
-    max_input_size_ = 0;
-    for (size_t i = 0; i + 1 < sizes.size(); ++i) {
-        size_t in = sizes[i];
-        size_t out = sizes[i+1];
-        max_input_size_ = std::max(max_input_size_, in);
-        total += in * out; // w
-        total += out;      // b
-        total += out;      // z
-        total += out;      // a
-        total += out;      // delta
-        total += in * out; // grad_w
-        total += out;      // grad_b
-    }
 
-    // dodatkowe bufory: input_buffer + 2 tmp grad buffy
-    total += sizes[0];          // input_buffer
-    total += 2 * max_input_size_; // grad_tmp1, grad_tmp2
-
-    arena_ = MemoryArena(total);
-
-    // alokuj input buffer
+    // alokuj input
     input_buffer_ = arena_.allocate(sizes[0]);
-    // wyzeruj input
     std::fill(input_buffer_, input_buffer_ + sizes[0], 0.0f);
 
-    // alokuj tmp grad buffery
+    // scratch bufory na max szerokość
     grad_tmp1_ = arena_.allocate(max_input_size_);
     grad_tmp2_ = arena_.allocate(max_input_size_);
     std::fill(grad_tmp1_, grad_tmp1_ + max_input_size_, 0.0f);
     std::fill(grad_tmp2_, grad_tmp2_ + max_input_size_, 0.0f);
 
-    // utwórz warstwy
+    // warstwy
     layers_.reserve(sizes.size() - 1);
     for (size_t i = 0; i + 1 < sizes.size(); ++i) {
         LayerConfig cfg;
-        cfg.input_size = sizes[i];
+        cfg.input_size  = sizes[i];
         cfg.output_size = sizes[i+1];
         cfg.weights_ptr = arena_.allocate(cfg.input_size * cfg.output_size);
         cfg.biases_ptr  = arena_.allocate(cfg.output_size);
@@ -56,7 +64,6 @@ Network::Network(const std::vector<size_t>& sizes,
         cfg.grad_w_ptr  = arena_.allocate(cfg.input_size * cfg.output_size);
         cfg.grad_b_ptr  = arena_.allocate(cfg.output_size);
 
-        // wybór aktywacji: ostatnia warstwa -> output_act
         ActivationType act = (i + 1 == sizes.size() - 1) ? output_act : hidden_act;
         layers_.emplace_back(cfg, act);
     }
@@ -124,3 +131,6 @@ void Network::update(float lr, size_t batch_size) {
     }
 }
 
+void Network::print_stats() {
+  arena_.stats();
+}

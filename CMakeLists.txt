@@ -10,5 +10,6 @@ add_executable(Neural_Network
         MINST_Loader.cpp
         Layer.cpp
         Arena.cpp
+        Network.cpp
 )
 
