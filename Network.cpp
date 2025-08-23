@@ -67,6 +67,9 @@ Network::Network(const std::vector<size_t>& sizes,
         ActivationType act = (i + 1 == sizes.size() - 1) ? output_act : hidden_act;
         layers_.emplace_back(cfg, act);
     }
+    arena_.validate_allocations();
+    auto s = arena_.stats();
+    std::cout << "ARENA capacity=" << s.capacity << " used=" << s.used << " peak=" << s.peak << std::endl;
 }
 
 // forward: input_ptr może być wskaźnikiem do input_buffer_ lub innego bufora,

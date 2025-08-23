@@ -18,10 +18,15 @@ public:
     MemoryArena(const MemoryArena&) = delete;
     MemoryArena& operator=(const MemoryArena&) = delete;
 
+    MemoryArena(MemoryArena&& other) noexcept;
+    MemoryArena& operator=(MemoryArena&& other) noexcept;
+
     float* allocate(size_t n);      // Zwraca wskaźnik do n floatów
     void reset();                   // Zaczyna alokację od początku
     ArenaStats stats() const;
     void printContent(std::ostream& os);
+
+    void validate_allocations() const;
 
 private:
     float* data_;
@@ -29,5 +34,10 @@ private:
     size_t offset_;    // aktualna pozycja alokacji
     size_t used_;
     size_t peak_;
+
+#ifdef ARENA_DEBUG
+    // rejestrujemy pary (start_index, length) w jednostkach floatów
+    std::vector<std::pair<size_t,size_t>> allocations_;
+#endif
 };
 

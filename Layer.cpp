@@ -72,6 +72,10 @@ float Layer::activate_derivative(float x, ActivationType type) {
 }
 
 void Layer::forward(const float* x) {
+#ifdef ARENA_DEBUG
+    if (!x) throw std::runtime_error("Layer::forward: null input pointer");
+    // (opcjonalnie) możesz sprawdzić jakieś granice, ale Layer nie widzi całej areny
+#endif
     for (size_t j = 0; j < out_size_; ++j) {
         float sum = b_[j];
         const float* w_row = w_ + j * in_size_;
@@ -89,22 +93,43 @@ void Layer::forward(const float* x) {
     }
 }
 
-void Layer::backward(const float *x, const float *grad_out, float *grad_in) {
+void Layer::backward(const float* x, const float* grad_out, float* grad_in) {
+    // 1) delta_j = grad_out_j * f'(z_j)  (UWAGA: dla Softmax+CE NIE mnożymy przez f')
     for (size_t j = 0; j < out_size_; ++j) {
-        delta_[j] = grad_out[j] * activate_derivative(grad_out[j], type_);
+        float d = grad_out[j];
+        // Jeżeli ta warstwa to softmax użyty z CE i grad_out = (a - y),
+        // to delta = grad_out (bez pochodnej). W innym wypadku licz pochodną w z_j:
+        if (type_ != ActivationType::Softmax) {
+            d *= activate_derivative(z_[j], type_); // pochodna po z, nie po grad_out!
+        }
+        delta_[j] = d;
     }
 
-    for (size_t i = 0; i < in_size_; ++i) {
-        float d = delta_[i];
-        grad_b_[i] += d;
-        float* gw_row = grad_w_ + i * out_size_;
-        float* w_row = w_ + i * out_size_;
-        for (size_t j = 0; j < out_size_; ++j) {
-            gw_row[j] += d * x[i];
-            grad_in[i] += w_row[j] * d;
+    // 2) grad_biasów: sumujemy po j
+    for (size_t j = 0; j < out_size_; ++j) {
+        grad_b_[j] += delta_[j];
+    }
+
+    // 3) grad_wag: dla każdego neuronu wyjściowego j i wejścia i
+    //    grad_w[j, i] += delta[j] * x[i]
+    for (size_t j = 0; j < out_size_; ++j) {
+        float* gw_row = grad_w_ + j * in_size_;   // ten sam layout co w forward
+        for (size_t i = 0; i < in_size_; ++i) {
+            gw_row[i] += delta_[j] * x[i];
+        }
+    }
+
+    // 4) grad_in: dL/dx[i] = sum_j w[j,i] * delta[j]
+    std::fill(grad_in, grad_in + in_size_, 0.0f);
+    for (size_t j = 0; j < out_size_; ++j) {
+        const float* w_row = w_ + j * in_size_;
+        float d = delta_[j];
+        for (size_t i = 0; i < in_size_; ++i) {
+            grad_in[i] += w_row[i] * d;
         }
     }
 }
+
 
 void Layer::reset_gradients() {
     std::fill(grad_w_, grad_w_ + in_size_ * out_size_, 0.0f);
