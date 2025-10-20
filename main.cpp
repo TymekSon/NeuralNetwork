@@ -8,23 +8,21 @@
 #include "Arena.h"
 #include "Network.h"
 
-std::vector<float> generate_input(int len) {
-    std::vector<float> x(len);
+std::vector<std::pair<float, float>> generate_input(int len) {
+    std::vector<std::pair<float, float>> x(len+1);
+    int count = 0;
     for (size_t i = 0; i < len; ++i) {
-        x[i] = std::rand()%2;
+        x[i].first = std::rand()%2;
+        if (x[i].first == 1) {
+            count ++;
+        }
+        x[i].second = 0;
     }
+    x[count].second = 1;
     return x;
 }
 
-int count_ones(std::vector<float>& x) {
-    int count = 0;
-    for (size_t i = 0; i < x.size(); ++i) {
-        if (x[i] == 1) {
-            ++count;
-        }
-    }
-    return count;
-}
+
 
 int main() {
     std::vector<size_t> sizes = {3, 8, 7};

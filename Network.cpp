@@ -35,8 +35,8 @@ size_t max_width_of(const std::vector<size_t>& sizes) {
 Network::Network(const std::vector<size_t>& sizes,
                  ActivationType hidden_act,
                  ActivationType output_act)
-    : arena_(calc_total_for_arena(sizes)),   // <-- INIT, nie przypisanie!
-      max_input_size_(max_width_of(sizes))   // max szerokość do scratchy
+    : arena_(calc_total_for_arena(sizes)),
+      max_input_size_(max_width_of(sizes))   
 {
     if (sizes.size() < 2) throw std::runtime_error("Network: need >=2 sizes");
 
