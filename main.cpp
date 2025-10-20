@@ -92,7 +92,7 @@ int main() {
         delete[] target;
     }
 
-    float* test_input = new float[9]{1,1,1,1,0,0,0,0,0};
+    float* test_input = new float[9]{1,1,1,0,0,0,0,1,0};
 
     int actual = 0;
     for (int i = 0; i < 9; ++i) {
