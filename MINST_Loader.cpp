@@ -59,7 +59,7 @@ uint32_t MINST_Loader::read32(std::ifstream& file){
 }
 
 
-std::vector<std::vector<float>> to_one_hot(
+std::vector<std::vector<float>> MINST_Loader::to_one_hot(
     const std::vector<uint8_t>& labels, int num_classes = 10
 ) {
     std::vector<std::vector<float>> oh;

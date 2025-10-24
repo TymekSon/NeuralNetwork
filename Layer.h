@@ -4,7 +4,7 @@
 #include <functional>
 #include "layer_config.h"
 
-enum class ActivationType { Identity, ReLU, Sigmoid, Tanh, Softmax };
+enum class ActivationType { Identity, ReLU, LReLU, Sigmoid, Tanh, Softmax };
 
 class Layer {
 

@@ -4,6 +4,8 @@
 #include <cassert>
 #include <cmath>
 #include <cstring>
+#include <random>
+
 #include "MINST_Loader.h"
 #include "Layer.h"
 #include "Arena.h"
@@ -57,82 +59,144 @@ int getPrediction(float* arr, int size) {
 }
 
 int main() {
-    std::vector<size_t> sizes = {9, 6, 10};
-    Network net(sizes, ActivationType::ReLU, ActivationType::Softmax);
+    MINST_Loader loader;
 
-    float lr = 0.02f;
+    std::string train_imgs_f = "../Data/trainImages.idx3-ubyte";
+    std::string train_labels_f = "../Data/trainLabels.idx1-ubyte";
 
-    int steps = 100000;
-    for (size_t i = 0; i < steps; ++i) {
-        auto data = train_data(9);
-        float* input = data.first;
-        float* target = data.second;
+    std::string test_imgs_f = "../Data/testImages.idx3-ubyte";
+    std::string test_labels_f = "../Data/testLabels.idx1-ubyte";
 
-        // przed treningiem -> forward
+    auto train_imgs = loader.load_MINST_Images(train_imgs_f);
+    auto train_labels = loader.load_MINST_Labels(train_labels_f);
+
+    auto norm_train_imgs = loader.normalize_MINST_Images(train_imgs);
+    auto norm_train_labels = loader.to_one_hot(train_labels, 10);
+
+    auto test_imgs = loader.load_MINST_Images(test_imgs_f);
+    auto test_labels = loader.load_MINST_Labels(test_labels_f);
+
+    auto norm_test_imgs = loader.normalize_MINST_Images(test_imgs);
+    auto norm_test_labels = loader.to_one_hot(test_labels, 10);
+
+    std::vector<size_t> sizes = {784, 512, 10};
+    Network net(sizes, ActivationType::LReLU, ActivationType::Softmax);
+
+    int batch_size = 16;
+    float lr = 0.04f;
+
+    std::cout << "Learning..." << std::endl;
+
+    for (size_t epoch = 0; epoch < 5; ++epoch) {
+        std::vector<size_t> indices(norm_test_imgs.size());
+        std::iota(indices.begin(), indices.end(), 0);
+        std::shuffle(indices.begin(), indices.end(), std::mt19937(std::random_device{}()));
+
+        for (size_t i = 0; i < norm_test_imgs.size(); i += batch_size) {
+            size_t end = std::min(i + batch_size, norm_test_imgs.size());
+
+            for (size_t j = i; j < end; ++j) {
+                float* input = norm_test_imgs[indices[j]].data();
+                float* target = norm_test_labels[indices[j]].data();
+
+                net.forward_pass(input);
+                net.backward_pass(target);
+            }
+
+            net.update(lr, end - i); // jedna aktualizacja po batchu
+        }
+    }
+
+    std::cout << "Testing accuracy..." << std::endl;
+
+    int correct = 0;
+
+    for (size_t i = 0; i < test_imgs.size(); ++i) {
+        float* input = norm_train_imgs[i].data();
+        float* target = norm_train_labels[i].data();
+
         net.forward_pass(input);
         float* out = net.output_ptr();
-        //std::cout << "Output (before): ";
-        //for (size_t i = 0; i < net.output_size(); ++i) std::cout << out[i] << " ";
-        //std::cout << std::endl;
 
-        // policz strata cross-entropy: -sum y*log(a)
-        double loss = 0.0;
-        for (size_t i = 0; i < net.output_size(); ++i) {
-            loss -= target[i] * std::log(std::max(1e-8f, out[i]));
-        }
-        //std::cout << "Loss (before): " << loss << std::endl;
+        int pred = std::distance(out, std::max_element(out, out + net.output_size()));
+        int actual = std::distance(target, std::max_element(target, target + net.output_size()));
 
-        // backward (one sample)
-        net.backward_pass(target);
-
-        // update (proste SGD)
-        net.update(lr, 1);
-
-        delete[] input;
-        delete[] target;
+        if (pred == actual) correct++;
     }
 
-    float* test_input = new float[9]{1,1,1,0,0,0,0,1,0};
+    std::cout << "Accuracy: " << (float)correct / test_imgs.size() * 100.0f << " %" << std::endl;
 
-    int actual = 0;
-    for (int i = 0; i < 9; ++i) {
-        if (test_input[i] == 1) actual++;
-    }
-
-    // SIMPLE TEST
-    net.forward_pass(test_input);
-    float* out = net.output_ptr();
-    int pred =  getPrediction(out, 10);
-    std::cout << "Counting ones, " << actual <<" ones in the array\n";
-    std::cout << "TEST Output (before): ";
-    for (size_t i = 0; i < net.output_size(); ++i) std::cout << out[i] << " ";
-    std::cout << std::endl;
-    std::cout << "Prediction: " << pred <<"\n\n";
-
-    net.print_stats();
-
-    delete[] test_input;
-
-    // SCIENTIFIC TEST
-    int count = 0;
-    int test_steps = 1000000;
-    for (int i = 0; i < test_steps; ++i) {
-        auto test_data = train_data(9);
-        float* test = test_data.first;
-        float* label = test_data.second;
-
-        net.forward_pass(test);
-        float* out = net.output_ptr();
-        int pred =  getPrediction(out, 10);
-
-        int actual = std::distance(label, std::max_element(label, label + 10));
-
-        if (pred == actual) count ++;
-
-        delete[] test;
-        delete[] label;
-    }
-    std::cout << "Accuracy: " << (float)100*count/test_steps << " %" << std::endl;
+    // int steps = 20000;
+    // for (size_t i = 0; i < steps; ++i) {
+    //     auto data = train_data(9);
+    //     float* input = data.first;
+    //     float* target = data.second;
+    //
+    //     // przed treningiem -> forward
+    //     net.forward_pass(input);
+    //     float* out = net.output_ptr();
+    //     //std::cout << "Output (before): ";
+    //     //for (size_t i = 0; i < net.output_size(); ++i) std::cout << out[i] << " ";
+    //     //std::cout << std::endl;
+    //
+    //     // policz strata cross-entropy: -sum y*log(a)
+    //     double loss = 0.0;
+    //     for (size_t i = 0; i < net.output_size(); ++i) {
+    //         loss -= target[i] * std::log(std::max(1e-8f, out[i]));
+    //     }
+    //     //std::cout << "Loss (before): " << loss << std::endl;
+    //
+    //     // backward (one sample)
+    //     net.backward_pass(target);
+    //
+    //     // update (proste SGD)
+    //     net.update(lr, 1);
+    //
+    //     delete[] input;
+    //     delete[] target;
+    // }
+    //
+    // float* test_input = new float[9]{1,0,1,0,1,0,0,0,1};
+    //
+    // int actual = 0;
+    // for (int i = 0; i < 9; ++i) {
+    //     if (test_input[i] == 1) actual++;
+    // }
+    //
+    // // SIMPLE TEST
+    // net.forward_pass(test_input);
+    // float* out = net.output_ptr();
+    // int pred =  getPrediction(out, 10);
+    // std::cout << "Counting ones, " << actual <<" ones in the array\n";
+    // std::cout << "TEST Output (before): ";
+    // for (size_t i = 0; i < net.output_size(); ++i) std::cout << out[i] << " ";
+    // std::cout << std::endl;
+    // std::cout << "Prediction: " << pred <<"\n\n";
+    //
+    // net.print_stats();
+    //
+    // delete[] test_input;
+    //
+    // // SCIENTIFIC TEST
+    // int count = 0;
+    // int test_steps = 100000;
+    // for (int i = 0; i < test_steps; ++i) {
+    //     auto test_data = train_data(9);
+    //     float* test = test_data.first;
+    //     float* label = test_data.second;
+    //
+    //     net.forward_pass(test);
+    //     float* out = net.output_ptr();
+    //     int pred =  getPrediction(out, 10);
+    //
+    //     int actual = std::distance(label, std::max_element(label, label + 10));
+    //
+    //     if (pred == actual) count ++;
+    //
+    //     delete[] test;
+    //     delete[] label;
+    // }
+    // std::cout << "Accuracy: " << (float)100*count/test_steps << " %" << std::endl;
 
     return 0;
 }

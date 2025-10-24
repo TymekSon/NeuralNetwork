@@ -40,6 +40,8 @@ float Layer::activate(float x, ActivationType type) {
     switch(type) {
         case ActivationType::ReLU:
             return x > 0.0f ? x : 0.0f;
+        case ActivationType::LReLU:
+            return x > 0.0f ? 1.0f : 0.01f * x;
         case ActivationType::Sigmoid: {
             float s = 1.0f / (1.0f + std::exp(-x));
             return s;
@@ -56,6 +58,8 @@ float Layer::activate_derivative(float x, ActivationType type) {
     switch(type) {
         case ActivationType::ReLU:
             return x > 0.0f ? 1.0f : 0.0f;
+        case ActivationType::LReLU:
+            return x > 0.0f ? 1.0f : 0.01f;
         case ActivationType::Sigmoid: {
             float s = 1.0f / (1.0f + std::exp(-x));
             return s * (1.0f - s);
