@@ -80,10 +80,10 @@ int main() {
     auto norm_test_labels = loader.to_one_hot(test_labels, 10);
 
     std::vector<size_t> sizes = {784, 512, 10};
-    Network net(sizes, ActivationType::LReLU, ActivationType::Softmax);
+    Network net(sizes, ActivationType::ReLU, ActivationType::Softmax);
 
-    int batch_size = 16;
-    float lr = 0.04f;
+    int batch_size = 1;
+    float lr = 0.02f;
 
     std::cout << "Learning..." << std::endl;
 
