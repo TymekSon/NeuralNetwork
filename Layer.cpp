@@ -34,6 +34,9 @@ Layer::Layer(const LayerConfig& cfg,
     for (int i = 0; i < out_size_; i++) {
         b_[i] = 0.0f;
     }
+
+    v_w.resize(in_size_ * out_size_, 0.0f);
+    v_b.resize(out_size_, 0.0f);
 }
 
 float Layer::activate(float x, ActivationType type) {

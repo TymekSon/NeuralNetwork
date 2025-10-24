@@ -118,16 +118,18 @@ void Network::backward_pass(float* label) {
     }
 }
 
-void Network::update(float lr, size_t batch_size) {
+void Network::update(float lr, float momentum, size_t batch_size) {
     for (auto& L : layers_) {
         // wagi
         size_t wcount = L.in_size_ * L.out_size_;
         for (size_t k = 0; k < wcount; ++k) {
-            L.w_[k] -= (lr * L.grad_w_[k]) / (float)batch_size;
+            L.v_w[k] = momentum * L.v_w[k] - (lr * L.grad_w_[k]) / (float)batch_size;
+            L.w_[k] += L.v_w[k];
         }
         // biasy
         for (size_t j = 0; j < L.out_size_; ++j) {
-            L.b_[j] -= (lr * L.grad_b_[j]) / (float)batch_size;
+            L.v_b[j] = momentum * L.v_b[j] - (lr * L.grad_b_[j]) / (float)batch_size;
+            L.b_[j] += L.v_b[j];
         }
         // zeruj gradienty po update
         L.reset_gradients();

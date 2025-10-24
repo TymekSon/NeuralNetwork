@@ -22,7 +22,7 @@ public:
 
   void backward_pass(float* label);
 
-  void update(float learning_rate, size_t batch_size = 1);
+  void update(float learning_rate, float momentum, size_t batch_size = 1);
 
     float* output_ptr() { return layers_.back().a_; }
     size_t output_size() const { return layers_.back().out_size_; }

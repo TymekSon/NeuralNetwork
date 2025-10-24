@@ -82,8 +82,8 @@ int main() {
     std::vector<size_t> sizes = {784, 512, 10};
     Network net(sizes, ActivationType::ReLU, ActivationType::Softmax);
 
-    int batch_size = 1;
-    float lr = 0.02f;
+    int batch_size = 2;
+    float lr = 0.03f;
 
     std::cout << "Learning..." << std::endl;
 
@@ -103,7 +103,7 @@ int main() {
                 net.backward_pass(target);
             }
 
-            net.update(lr, end - i); // jedna aktualizacja po batchu
+            net.update(lr, 0.5, end - i); // jedna aktualizacja po batchu
         }
     }
 

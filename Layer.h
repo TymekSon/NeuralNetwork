@@ -8,10 +8,14 @@ enum class ActivationType { Identity, ReLU, LReLU, Sigmoid, Tanh, Softmax };
 
 class Layer {
 
+
 public:
     // Konstruktor: wskaźniki i rozmiary muszą być wcześniej zaalokowane
     Layer(const LayerConfig& cfg,
           ActivationType type);
+
+    std::vector<float> v_w;
+    std::vector<float> v_b;
 
     // Forward dla jednego przykładu
     //  x[in_size] → z,a[out_size]
