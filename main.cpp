@@ -7,7 +7,8 @@
 #include <random>
 
 #include "MINST_Loader.h"
-#include "Layer.h"
+//#include "Layer.h"
+#include "DenseLayer.h"
 #include "Arena.h"
 #include "Network.h"
 
