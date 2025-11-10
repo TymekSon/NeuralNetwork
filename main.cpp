@@ -79,15 +79,16 @@ int main() {
     auto norm_test_imgs = loader.normalize_MINST_Images(test_imgs);
     auto norm_test_labels = loader.to_one_hot(test_labels, 10);
 
-    std::vector<size_t> sizes = {784, 512, 10};
+    std::vector<size_t> sizes = {784, 256, 10};
     Network net(sizes, ActivationType::ReLU, ActivationType::Softmax);
 
-    int batch_size = 2;
-    float lr = 0.03f;
+    int batch_size = 16;
+    float lr = 0.05f;
+    float lr_decay = 0.0002f;
 
     std::cout << "Learning..." << std::endl;
 
-    for (size_t epoch = 0; epoch < 5; ++epoch) {
+    for (size_t epoch = 0; epoch < 8; ++epoch) {
         std::vector<size_t> indices(norm_test_imgs.size());
         std::iota(indices.begin(), indices.end(), 0);
         std::shuffle(indices.begin(), indices.end(), std::mt19937(std::random_device{}()));
@@ -103,7 +104,7 @@ int main() {
                 net.backward_pass(target);
             }
 
-            net.update(lr, 0.5, end - i); // jedna aktualizacja po batchu
+            net.update(lr-lr_decay*epoch, 0.8, end - i); // jedna aktualizacja po batchu
         }
     }
 

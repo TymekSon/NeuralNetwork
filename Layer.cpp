@@ -28,7 +28,7 @@ Layer::Layer(const LayerConfig& cfg,
 {
     reset_gradients();
     for (int i = 0; i < in_size_ * out_size_; i++) {
-        w_[i] = rand_uniform(1.0f);
+        w_[i] = rand_uniform(0.5f);
     }
 
     for (int i = 0; i < out_size_; i++) {
