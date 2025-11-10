@@ -8,6 +8,8 @@
 
 #include "MINST_Loader.h"
 #include "DenseLayer.h"
+#include "Conv2DLayer.h"
+#include "MaxPoolingLayer.h"
 #include "Arena.h"
 #include "Network.h"
 
@@ -79,12 +81,14 @@ int main() {
     auto norm_test_imgs = loader.normalize_MINST_Images(test_imgs);
     auto norm_test_labels = loader.to_one_hot(test_labels, 10);
 
-    auto layer1 = std::make_unique<DenseLayer>(784, 128, ActivationType::ReLU);
-    auto layer2 = std::make_unique<DenseLayer>(128, 10, ActivationType::Softmax);
+    auto conv = std::make_unique<Conv2DLayer>(1, 28, 28, 4, 3, 1, 1);
+    auto pool = std::make_unique<MaxPoolingLayer>(2, 2);
+    auto dense = std::make_unique<DenseLayer>(4*14*14, 10, ActivationType::Softmax);
 
     std::vector<std::unique_ptr<BaseLayer>> layers;
-    layers.push_back(std::move(layer1));
-    layers.push_back(std::move(layer2));
+    layers.push_back(std::move(conv));
+    layers.push_back(std::move(pool));
+    layers.push_back(std::move(dense));
 
     Network net(std::move(layers), 784);
 

@@ -13,5 +13,7 @@ add_executable(Neural_Network
         Network.cpp
         BaseLayer.cpp
         DenseLayer.cpp
+        Conv2DLayer.cpp
+        MaxPoolingLayer.cpp
 )
 

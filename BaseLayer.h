@@ -22,6 +22,8 @@ public:
   virtual void get_input_shape(size_t& h, size_t& w, size_t& c) const { h=w=c=0; }
   virtual void get_output_shape(size_t& h, size_t& w, size_t& c) const { h=w=c=0; }
 
+  virtual void* get_mask() const { return nullptr; }
+
   // Gettery
   const float* output() const { return a_; }
   const float* pre_activation() const { return z_; }
