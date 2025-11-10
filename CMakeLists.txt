@@ -11,5 +11,7 @@ add_executable(Neural_Network
         Layer.cpp
         Arena.cpp
         Network.cpp
+        BaseLayer.cpp
+        DenseLayer.cpp
 )
 

@@ -28,7 +28,11 @@ public:
 
     void validate_allocations() const;
 
+    float* get_current_ptr() const { return data_ + offset_; }
+
 private:
+    float* buffer_ = nullptr;
+    float* current_ = nullptr;
     float* data_;
     size_t capacity_;  // liczba floatów
     size_t offset_;    // aktualna pozycja alokacji

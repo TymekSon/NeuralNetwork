@@ -7,7 +7,6 @@
 #include <random>
 
 #include "MINST_Loader.h"
-//#include "Layer.h"
 #include "DenseLayer.h"
 #include "Arena.h"
 #include "Network.h"
@@ -80,8 +79,14 @@ int main() {
     auto norm_test_imgs = loader.normalize_MINST_Images(test_imgs);
     auto norm_test_labels = loader.to_one_hot(test_labels, 10);
 
-    std::vector<size_t> sizes = {784, 256, 10};
-    Network net(sizes, ActivationType::ReLU, ActivationType::Softmax);
+    auto layer1 = std::make_unique<DenseLayer>(784, 128, ActivationType::ReLU);
+    auto layer2 = std::make_unique<DenseLayer>(128, 10, ActivationType::Softmax);
+
+    std::vector<std::unique_ptr<BaseLayer>> layers;
+    layers.push_back(std::move(layer1));
+    layers.push_back(std::move(layer2));
+
+    Network net(std::move(layers), 784);
 
     int batch_size = 16;
     float lr = 0.05f;
@@ -89,7 +94,7 @@ int main() {
 
     std::cout << "Learning..." << std::endl;
 
-    for (size_t epoch = 0; epoch < 8; ++epoch) {
+    for (size_t epoch = 0; epoch < 2; ++epoch) {
         std::vector<size_t> indices(norm_test_imgs.size());
         std::iota(indices.begin(), indices.end(), 0);
         std::shuffle(indices.begin(), indices.end(), std::mt19937(std::random_device{}()));

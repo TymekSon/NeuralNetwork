@@ -6,8 +6,8 @@
 #include <string>
 //#include "Layer.h"
 #include "Arena.h"
-//#include "BaseLayer.h"
-#include "DenseLayer.h"
+#include "BaseLayer.h"
+//#include "DenseLayer.h"
 #include <memory>
 
 #ifndef NETWORK_H
@@ -17,9 +17,7 @@
 
 class Network {
 public:
-  Network(const std::vector<size_t>& sizes,
-          ActivationType hidden_act = ActivationType::ReLU,
-          ActivationType output_act = ActivationType::Softmax);
+    Network(std::vector<std::unique_ptr<BaseLayer>> layers, size_t max_input_size = 0);
 
   void forward_pass(float* input);
 
@@ -34,7 +32,7 @@ public:
 
 private:
     std::vector<std::unique_ptr<BaseLayer>> layers_;
-    MemoryArena arena_;
+    std::unique_ptr<MemoryArena> arena_;
     float* input_buffer_; // wsk na buffer wejściowy (w arenie)
     float* grad_tmp1_;    // bufory pomocnicze (alokowane w arenie)
     float* grad_tmp2_;
